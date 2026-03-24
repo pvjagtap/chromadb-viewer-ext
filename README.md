@@ -2,6 +2,10 @@
 
 Browse and inspect [ChromaDB](https://www.trychroma.com/) vector store databases directly in VS Code. View collections, documents, metadata, embeddings, and run SQL queries — all without leaving the editor.
 
+## Demo
+
+[▶ Watch Demo Video](media/chromadb-viewer-1.5.0.mp4)
+
 ## Features
 
 - **Collection Browser** — Lists all ChromaDB collections with document counts, dimensions, and metadata
