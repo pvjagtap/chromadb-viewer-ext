@@ -1,0 +1,68 @@
+{
+  "name": "chromadb-viewer",
+  "displayName": "ChromaDB Viewer",
+  "description": "High-performance SQLite database viewer for ChromaDB vector stores",
+  "version": "1.4.0",
+  "publisher": "chromadb-viewer",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other",
+    "Visualization"
+  ],
+  "activationEvents": [],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "chromadbViewer.open",
+        "title": "Open Viewer",
+        "category": "ChromaDB Viewer"
+      },
+      {
+        "command": "chromadbViewer.openFile",
+        "title": "Open Database File",
+        "category": "ChromaDB Viewer"
+      },
+      {
+        "command": "chromadbViewer.openFromExplorer",
+        "title": "Open with ChromaDB Viewer"
+      }
+    ],
+    "menus": {
+      "explorer/context": [
+        {
+          "command": "chromadbViewer.openFromExplorer",
+          "when": "resourceExtname == .sqlite3 || resourceExtname == .db",
+          "group": "navigation"
+        }
+      ]
+    },
+    "customEditors": [
+      {
+        "viewType": "chromadbViewer.editor",
+        "displayName": "ChromaDB Viewer",
+        "selector": [
+          { "filenamePattern": "*.sqlite3" },
+          { "filenamePattern": "*.db" }
+        ],
+        "priority": "option"
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "package": "npx @vscode/vsce package"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.37",
+    "@types/vscode": "1.85",
+    "typescript": "5.3"
+  },
+  "dependencies": {
+    "sql.js": "^1.14.1"
+  }
+}
