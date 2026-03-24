@@ -1,16 +1,45 @@
 {
   "name": "chromadb-viewer",
   "displayName": "ChromaDB Viewer",
-  "description": "High-performance SQLite database viewer for ChromaDB vector stores",
-  "version": "1.4.0",
-  "publisher": "chromadb-viewer",
+  "description": "Browse and inspect ChromaDB vector store databases directly in VS Code. View collections, documents, metadata, embeddings, and run SQL queries — all without leaving the editor.",
+  "version": "1.5.0",
+  "publisher": "pvjagtap",
+  "author": {
+    "name": "Pritesh Jagtap",
+    "url": "https://github.com/pvjagtap"
+  },
+  "license": "MIT",
+  "icon": "media/icon.png",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/pvjagtap/chromadb-viewer-ext"
+  },
+  "bugs": {
+    "url": "https://github.com/pvjagtap/chromadb-viewer-ext/issues"
+  },
+  "homepage": "https://github.com/pvjagtap/chromadb-viewer-ext#readme",
+  "keywords": [
+    "chromadb",
+    "sqlite",
+    "database",
+    "viewer",
+    "vector-store",
+    "embeddings",
+    "rag",
+    "llm"
+  ],
   "engines": {
     "vscode": "^1.85.0"
   },
   "categories": [
     "Other",
-    "Visualization"
+    "Visualization",
+    "Data Science"
   ],
+  "galleryBanner": {
+    "color": "#1a1a2e",
+    "theme": "dark"
+  },
   "activationEvents": [],
   "main": "./out/extension.js",
   "contributes": {
