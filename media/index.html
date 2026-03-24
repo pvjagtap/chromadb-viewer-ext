@@ -1,0 +1,2857 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ChromaDB Viewer</title>
+<style>
+/* ===== RESET & BASE ===== */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; overflow: hidden; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  font-size: 13px;
+  color: #cccccc;
+  background: #1e1e1e;
+  display: flex;
+  flex-direction: column;
+}
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: #1e1e1e; }
+::-webkit-scrollbar-thumb { background: #424242; border-radius: 5px; }
+::-webkit-scrollbar-thumb:hover { background: #555; }
+::selection { background: #264f78; color: #fff; }
+
+/* ===== TOP TAB BAR ===== */
+.tab-bar {
+  display: flex;
+  align-items: center;
+  background: #252526;
+  border-bottom: 1px solid #3c3c3c;
+  height: 36px;
+  min-height: 36px;
+  padding: 0 8px;
+  gap: 2px;
+}
+.tab-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: #1e1e1e;
+  border: 1px solid #3c3c3c;
+  border-bottom: 2px solid #007acc;
+  border-radius: 4px 4px 0 0;
+  cursor: pointer;
+  font-size: 12px;
+  color: #ffffff;
+  white-space: nowrap;
+}
+.tab-item .tab-icon { color: #519aba; font-size: 14px; }
+.tab-item .tab-close {
+  margin-left: 4px; cursor: pointer; color: #888;
+  font-size: 14px; line-height: 1;
+}
+.tab-item .tab-close:hover { color: #fff; }
+
+/* ===== BREADCRUMB BAR ===== */
+.breadcrumb-bar {
+  display: flex;
+  align-items: center;
+  background: #1e1e1e;
+  border-bottom: 1px solid #3c3c3c;
+  padding: 4px 12px;
+  height: 28px;
+  min-height: 28px;
+  font-size: 12px;
+  color: #888;
+  gap: 4px;
+  overflow: hidden;
+}
+.breadcrumb-bar span { white-space: nowrap; }
+.breadcrumb-bar .bc-sep { color: #555; margin: 0 2px; }
+.breadcrumb-bar .bc-active { color: #cccccc; }
+
+/* ===== MAIN LAYOUT ===== */
+.main-layout {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+}
+
+/* ===== SIDEBAR ===== */
+.sidebar {
+  width: 240px;
+  min-width: 180px;
+  max-width: 400px;
+  background: #252526;
+  border-right: 1px solid #3c3c3c;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: #bbbbbb;
+  border-bottom: 1px solid #3c3c3c;
+}
+.sidebar-filter {
+  padding: 6px 8px;
+  border-bottom: 1px solid #3c3c3c;
+}
+.sidebar-filter input {
+  width: 100%;
+  background: #3c3c3c;
+  border: 1px solid #555;
+  color: #cccccc;
+  padding: 4px 8px;
+  border-radius: 3px;
+  font-size: 12px;
+  outline: none;
+}
+.sidebar-filter input:focus { border-color: #007acc; }
+.sidebar-filter input::placeholder { color: #888; }
+.sidebar-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 4px 0;
+}
+.sidebar-item {
+  display: flex;
+  align-items: center;
+  padding: 4px 12px;
+  cursor: pointer;
+  font-size: 13px;
+  color: #cccccc;
+  gap: 6px;
+  border-left: 3px solid transparent;
+  transition: background 0.1s;
+}
+.sidebar-item:hover { background: #2a2d2e; }
+.sidebar-item.active {
+  background: #094771;
+  border-left-color: #007acc;
+  color: #ffffff;
+}
+.sidebar-item .tbl-icon {
+  color: #c5943a;
+  font-size: 14px;
+  flex-shrink: 0;
+  width: 16px;
+  text-align: center;
+}
+.sidebar-item .tbl-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sidebar-item .tbl-count {
+  font-size: 11px;
+  color: #888;
+  flex-shrink: 0;
+  background: #3c3c3c;
+  padding: 1px 5px;
+  border-radius: 8px;
+}
+
+/* ===== RESIZE HANDLE ===== */
+.resize-handle {
+  width: 4px;
+  cursor: col-resize;
+  background: transparent;
+  transition: background 0.2s;
+}
+.resize-handle:hover, .resize-handle.active { background: #007acc; }
+
+/* ===== CONTENT AREA ===== */
+.content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: #1e1e1e;
+}
+
+/* ===== TOOLBAR ===== */
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 12px;
+  background: #252526;
+  border-bottom: 1px solid #3c3c3c;
+  min-height: 36px;
+  gap: 12px;
+}
+.toolbar-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.row-count {
+  font-size: 12px;
+  color: #cccccc;
+  font-weight: 600;
+}
+.row-count span { color: #4fc1ff; }
+.toolbar-filter {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.toolbar-filter input {
+  background: #3c3c3c;
+  border: 1px solid #555;
+  color: #cccccc;
+  padding: 3px 8px;
+  border-radius: 3px;
+  font-size: 12px;
+  width: 180px;
+  outline: none;
+}
+.toolbar-filter input:focus { border-color: #007acc; }
+.toolbar-filter input::placeholder { color: #888; }
+.toolbar-btn {
+  background: #3c3c3c;
+  border: 1px solid #555;
+  color: #cccccc;
+  padding: 3px 10px;
+  border-radius: 3px;
+  font-size: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+.toolbar-btn:hover { background: #4a4a4a; border-color: #666; }
+.toolbar-btn.primary { background: #0e639c; border-color: #1177bb; color: #fff; }
+.toolbar-btn.primary:hover { background: #1177bb; }
+
+/* ===== TABLE CONTAINER ===== */
+.table-wrapper {
+  flex: 1;
+  overflow: auto;
+  position: relative;
+}
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+.data-table th,
+.data-table td {
+  padding: 4px 10px;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  border-right: 1px solid #3c3c3c;
+  border-bottom: 1px solid #2d2d2d;
+  max-width: 350px;
+}
+.data-table thead { position: sticky; top: 0; z-index: 10; }
+.data-table thead th {
+  background: #333333;
+  color: #cccccc;
+  font-weight: 600;
+  font-size: 12px;
+  border-bottom: 2px solid #007acc;
+  user-select: none;
+  position: relative;
+}
+.data-table thead th.sortable { cursor: pointer; }
+.data-table thead th.sortable:hover { background: #3a3a3a; }
+.data-table thead th .col-header {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.data-table thead th .col-name { flex: 1; overflow: hidden; text-overflow: ellipsis; }
+.data-table thead th .col-type {
+  font-size: 10px;
+  color: #888;
+  font-weight: 400;
+  text-transform: uppercase;
+  background: #2a2a2a;
+  padding: 1px 4px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+.data-table thead th .sort-indicator {
+  color: #007acc;
+  font-size: 10px;
+  flex-shrink: 0;
+  width: 12px;
+}
+.data-table thead th .col-type-icon {
+  flex-shrink: 0;
+  width: 14px;
+  height: 14px;
+  border-radius: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  font-weight: 700;
+  color: #fff;
+}
+.type-text { background: #c5943a; }
+.type-int { background: #4e94ce; }
+.type-real { background: #6a9955; }
+.type-blob { background: #c586c0; }
+.type-any { background: #888; }
+
+/* Filter row */
+.filter-row th {
+  background: #2a2a2a;
+  padding: 3px 4px;
+  border-bottom: 1px solid #3c3c3c;
+}
+.filter-row input {
+  width: 100%;
+  background: #1e1e1e;
+  border: 1px solid #3c3c3c;
+  color: #cccccc;
+  padding: 2px 6px;
+  font-size: 11px;
+  border-radius: 2px;
+  outline: none;
+}
+.filter-row input:focus { border-color: #007acc; }
+.filter-row input::placeholder { color: #555; }
+
+/* Row number column */
+.row-num-col { width: 55px; min-width: 55px; max-width: 55px; }
+.data-table td.row-num,
+.data-table th.row-num {
+  background: #252526;
+  color: #858585;
+  text-align: right;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  border-right: 2px solid #3c3c3c;
+  width: 55px;
+  min-width: 55px;
+  max-width: 55px;
+  padding-right: 8px;
+  position: sticky;
+  left: 0;
+  z-index: 5;
+}
+.data-table thead th.row-num { z-index: 15; }
+.filter-row th.row-num { z-index: 15; position: sticky; left: 0; }
+
+/* Body rows */
+.data-table tbody tr { transition: background 0.05s; }
+.data-table tbody tr:nth-child(even) { background: #1e1e1e; }
+.data-table tbody tr:nth-child(odd) { background: #252526; }
+.data-table tbody tr:hover { background: #2a2d2e; }
+.data-table tbody tr.selected { background: #094771; }
+.data-table tbody td {
+  font-size: 12px;
+  color: #d4d4d4;
+  font-family: "Cascadia Code", "Fira Code", "Consolas", monospace;
+}
+.data-table tbody td .null-value { color: #555; font-style: italic; }
+.data-table tbody td .blob-value { color: #c586c0; font-style: italic; cursor: pointer; }
+.data-table tbody td .num-value { color: #b5cea8; }
+.data-table tbody td .str-value { color: #ce9178; }
+.data-table tbody td .str-value[title] { cursor: pointer; text-decoration: underline dotted #ce917866; }
+
+/* ===== PAGINATION BAR ===== */
+.pagination-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 12px;
+  background: #007acc;
+  min-height: 28px;
+  font-size: 12px;
+  color: #ffffff;
+}
+.pagination-bar .pag-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.pagination-bar .pag-center {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.pagination-bar .pag-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.pag-btn {
+  background: rgba(255,255,255,0.15);
+  border: none;
+  color: #fff;
+  padding: 2px 8px;
+  cursor: pointer;
+  border-radius: 3px;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+}
+.pag-btn:hover { background: rgba(255,255,255,0.25); }
+.pag-btn:disabled { opacity: 0.4; cursor: default; }
+.pag-btn:disabled:hover { background: rgba(255,255,255,0.15); }
+.page-input {
+  width: 50px;
+  background: rgba(255,255,255,0.2);
+  border: 1px solid rgba(255,255,255,0.3);
+  color: #fff;
+  padding: 1px 4px;
+  text-align: center;
+  font-size: 12px;
+  border-radius: 3px;
+  outline: none;
+}
+.page-input:focus { border-color: #fff; }
+.pag-info { font-size: 11px; opacity: 0.85; }
+
+/* ===== SQL PANEL ===== */
+.sql-panel {
+  background: #252526;
+  border-top: 1px solid #3c3c3c;
+  display: none;
+  flex-direction: column;
+  height: 200px;
+}
+.sql-panel.open { display: flex; }
+.sql-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 8px;
+  background: #333333;
+  border-bottom: 1px solid #3c3c3c;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.sql-editor {
+  flex: 1;
+  width: 100%;
+  background: #1e1e1e;
+  border: none;
+  color: #d4d4d4;
+  font-family: "Cascadia Code", "Fira Code", "Consolas", monospace;
+  font-size: 13px;
+  padding: 8px;
+  resize: none;
+  outline: none;
+}
+
+/* ===== LOADING & EMPTY STATES ===== */
+.loading-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(30, 30, 30, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+.spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid #3c3c3c;
+  border-top-color: #007acc;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: #888;
+  gap: 8px;
+}
+.empty-state .icon { font-size: 48px; opacity: 0.3; }
+.empty-state .msg { font-size: 14px; }
+
+/* ===== COLLECTIONS SIDEBAR ===== */
+.sidebar-section-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: #bbbbbb;
+  border-bottom: 1px solid #3c3c3c;
+  cursor: pointer;
+  user-select: none;
+}
+.sidebar-section-toggle:hover { background: #2a2d2e; }
+.sidebar-section-toggle .toggle-arrow {
+  font-size: 10px;
+  transition: transform 0.15s;
+}
+.sidebar-section-toggle .toggle-arrow.collapsed { transform: rotate(-90deg); }
+.collections-section { border-top: 1px solid #3c3c3c; }
+.collections-section .sidebar-list { max-height: 260px; }
+.collections-section.collapsed .sidebar-list,
+.collections-section.collapsed .sidebar-filter { display: none; }
+.sidebar-item .coll-icon { color: #569cd6; font-size: 14px; flex-shrink: 0; width: 16px; text-align: center; }
+.sidebar-item .coll-meta { font-size: 10px; color: #888; margin-left: 4px; }
+
+/* ===== COLLECTION DETAIL VIEW ===== */
+.coll-detail-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 12px;
+  background: #252526;
+  border-bottom: 1px solid #3c3c3c;
+  min-height: 36px;
+  flex-wrap: wrap;
+}
+.coll-detail-header .cdh-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: #4ec9b0;
+}
+.coll-detail-header .cdh-chip {
+  font-size: 11px;
+  background: #252830;
+  border: 1px solid #333640;
+  border-radius: 3px;
+  padding: 2px 8px;
+  color: #b0b8c8;
+}
+.coll-detail-header .cdh-chip b { color: #dcdcaa; }
+.coll-search-bar {
+  padding: 6px 12px;
+  background: #252526;
+  border-bottom: 1px solid #3c3c3c;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  min-height: 36px;
+}
+.coll-search-bar input {
+  background: #3c3c3c;
+  border: 1px solid #555;
+  color: #cccccc;
+  padding: 3px 8px;
+  border-radius: 3px;
+  font-size: 12px;
+  width: 240px;
+  outline: none;
+}
+.coll-search-bar input:focus { border-color: #007acc; }
+.coll-search-bar input::placeholder { color: #888; }
+.coll-search-bar .row-count { font-size: 12px; color: #cccccc; font-weight: 600; }
+.coll-search-bar .row-count span { color: #4fc1ff; }
+.coll-docs-list {
+  flex: 1;
+  overflow: auto;
+  position: relative;
+}
+#collDataTable { table-layout: auto; }
+#collDataTable .col-doc { min-width: 350px; max-width: 600px; }
+#collDataTable tbody tr { cursor: pointer; }
+#collDataTable tbody tr:hover { background: #264f78 !important; }
+.coll-meta-count {
+  font-size: 10px;
+  color: #888;
+  background: #333;
+  padding: 1px 6px;
+  border-radius: 8px;
+  margin-left: 4px;
+}
+
+/* ===== ROW DETAIL PANEL ===== */
+.row-detail-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.45);
+  z-index: 2000;
+  display: none;
+}
+.row-detail-panel {
+  position: fixed;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  background: #1e1e1e;
+  border: 1px solid #007acc;
+  border-radius: 6px;
+  width: min(90vw, 900px);
+  max-height: 80vh;
+  display: none;
+  flex-direction: column;
+  z-index: 2001;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+}
+.row-detail-panel.open { display: flex; }
+.row-detail-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-bottom: 1px solid #333;
+  font-size: 13px;
+  color: #ccc;
+  flex-shrink: 0;
+}
+.row-detail-header .rd-title { color: #4ec9b0; font-weight: 600; }
+.row-detail-actions { display: flex; gap: 6px; }
+.row-detail-actions button {
+  background: #333;
+  border: 1px solid #555;
+  color: #d4d4d4;
+  padding: 3px 10px;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 11px;
+}
+.row-detail-actions button:hover { background: #444; border-color: #007acc; }
+.row-detail-body {
+  overflow: auto;
+  flex: 1;
+  padding: 0;
+}
+.row-detail-body table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.row-detail-body table tr { border-bottom: 1px solid #2d2d2d; }
+.row-detail-body table tr:hover { background: #2a2d2e; }
+.row-detail-body table td {
+  padding: 8px 14px;
+  font-size: 12px;
+  vertical-align: top;
+}
+.row-detail-body table td.rd-key {
+  color: #9cdcfe;
+  font-weight: 600;
+  white-space: nowrap;
+  width: 180px;
+  min-width: 140px;
+  background: #252526;
+  border-right: 1px solid #333;
+  font-family: "Cascadia Code", "Consolas", monospace;
+}
+.row-detail-body table td.rd-val {
+  color: #d4d4d4;
+  font-family: "Cascadia Code", "Consolas", monospace;
+  white-space: pre-wrap;
+  word-break: break-word;
+  line-height: 1.5;
+  user-select: text;
+}
+.row-detail-body table td.rd-val .null-value { color: #555; font-style: italic; }
+.row-detail-body table td.rd-val .num-value { color: #b5cea8; }
+.row-detail-body table td.rd-val .str-value { color: #ce9178; }
+
+/* ===== CELL TOOLTIP (hover) ===== */
+.cell-tooltip {
+  position: fixed;
+  background: #1e1e1e;
+  border: 1px solid #007acc;
+  color: #d4d4d4;
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-family: "Cascadia Code", "Fira Code", "Consolas", monospace;
+  font-size: 12px;
+  max-width: 600px;
+  max-height: 300px;
+  overflow: auto;
+  z-index: 1000;
+  white-space: pre-wrap;
+  word-break: break-all;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+  display: none;
+  pointer-events: auto;
+}
+
+/* ===== CELL DETAIL PANEL (click) ===== */
+.cell-detail-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.45);
+  z-index: 2000;
+  display: none;
+}
+.cell-detail-panel {
+  position: fixed;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  background: #1e1e1e;
+  border: 1px solid #007acc;
+  border-radius: 6px;
+  width: min(80vw, 800px);
+  max-height: 70vh;
+  display: flex;
+  flex-direction: column;
+  z-index: 2001;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+}
+.cell-detail-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 14px;
+  border-bottom: 1px solid #333;
+  font-size: 12px;
+  color: #ccc;
+  flex-shrink: 0;
+}
+.cell-detail-header .col-name { color: #4ec9b0; font-weight: 600; }
+.cell-detail-header .row-info { color: #888; margin-left: 12px; }
+.cell-detail-actions { display: flex; gap: 6px; }
+.cell-detail-actions button {
+  background: #333;
+  border: 1px solid #555;
+  color: #d4d4d4;
+  padding: 3px 10px;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 11px;
+}
+.cell-detail-actions button:hover { background: #444; border-color: #007acc; }
+.cell-detail-body {
+  padding: 12px 14px;
+  overflow: auto;
+  flex: 1;
+  font-family: "Cascadia Code", "Consolas", monospace;
+  font-size: 12px;
+  color: #d4d4d4;
+  white-space: pre-wrap;
+  word-break: break-all;
+  line-height: 1.5;
+  user-select: text;
+}
+
+/* ===== CONTEXT MENU ===== */
+.context-menu {
+  position: fixed;
+  background: #252526;
+  border: 1px solid #3c3c3c;
+  border-radius: 4px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+  z-index: 1000;
+  min-width: 160px;
+  padding: 4px 0;
+  display: none;
+}
+.context-menu .cm-item {
+  padding: 6px 16px;
+  cursor: pointer;
+  font-size: 12px;
+  color: #cccccc;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.context-menu .cm-item:hover { background: #094771; }
+.context-menu .cm-sep {
+  height: 1px;
+  background: #3c3c3c;
+  margin: 4px 0;
+}
+
+/* ===== COL RESIZE ===== */
+.col-resizer {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  cursor: col-resize;
+  z-index: 20;
+}
+.col-resizer:hover { background: #007acc; }
+
+/* ===== DROPDOWN ===== */
+.dropdown {
+  position: relative;
+  display: inline-block;
+}
+.dropdown-content {
+  display: none;
+  position: absolute;
+  right: 0;
+  bottom: 100%;
+  background: #252526;
+  border: 1px solid #3c3c3c;
+  border-radius: 4px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+  z-index: 1000;
+  min-width: 120px;
+  padding: 4px 0;
+  margin-bottom: 4px;
+}
+.dropdown-content.open { display: block; }
+.dropdown-content .dd-item {
+  padding: 6px 16px;
+  cursor: pointer;
+  font-size: 12px;
+  color: #cccccc;
+  white-space: nowrap;
+}
+.dropdown-content .dd-item:hover { background: #094771; }
+
+/* ===== CONNECTION BAR ===== */
+.conn-bar {
+  display: flex;
+  align-items: center;
+  background: #1b3a1b;
+  border-bottom: 1px solid #2d5a2d;
+  padding: 4px 12px;
+  min-height: 32px;
+  gap: 8px;
+  font-size: 12px;
+  transition: background 0.2s;
+}
+.conn-bar.disconnected { background: #3a1b1b; border-bottom-color: #5a2d2d; }
+.conn-bar .conn-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: #4ec94e; flex-shrink: 0;
+}
+.conn-bar.disconnected .conn-dot { background: #e05252; }
+.conn-bar .conn-label { color: #aaa; flex-shrink: 0; }
+.conn-bar .conn-path {
+  color: #d4d4d4; flex: 1; overflow: hidden;
+  text-overflow: ellipsis; white-space: nowrap;
+  font-family: "Cascadia Code", "Consolas", monospace;
+}
+.conn-bar .conn-size {
+  color: #888; flex-shrink: 0;
+  font-family: "Cascadia Code", "Consolas", monospace;
+}
+.conn-bar .conn-btn {
+  background: #3c3c3c; border: 1px solid #555;
+  color: #cccccc; padding: 2px 10px;
+  border-radius: 3px; font-size: 11px;
+  cursor: pointer; white-space: nowrap;
+}
+.conn-bar .conn-btn:hover { background: #4a4a4a; border-color: #666; }
+.conn-bar .conn-btn.primary { background: #0e639c; border-color: #1177bb; color: #fff; }
+.conn-bar .conn-btn.primary:hover { background: #1177bb; }
+.conn-bar .conn-btn.danger { background: #5a1d1d; border-color: #8b3232; color: #e88; }
+.conn-bar .conn-btn.danger:hover { background: #7a2d2d; }
+
+/* ===== STATS RIBBON ===== */
+.stats-ribbon {
+  display: none;
+  align-items: center;
+  background: #1a1d23;
+  border-bottom: 1px solid #2a2d35;
+  padding: 3px 12px;
+  gap: 4px;
+  font-size: 11px;
+  overflow-x: auto;
+  flex-shrink: 0;
+}
+.stats-ribbon.visible { display: flex; }
+.stat-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #252830;
+  border: 1px solid #333640;
+  border-radius: 3px;
+  padding: 2px 8px;
+  white-space: nowrap;
+  color: #b0b8c8;
+}
+.stat-chip .stat-label { color: #777e8e; }
+.stat-chip .stat-value { color: #4ec9b0; font-family: "Cascadia Code", "Consolas", monospace; font-weight: 600; }
+.stat-chip.accent .stat-value { color: #dcdcaa; }
+.stat-chip.highlight .stat-value { color: #569cd6; }
+.stat-chip .stat-icon { font-size: 12px; }
+
+/* ===== CONNECT MODAL / WELCOME ===== */
+.connect-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.6);
+  z-index: 2000;
+  display: flex; align-items: center; justify-content: center;
+}
+.connect-overlay.hidden { display: none; }
+.connect-dialog {
+  background: #252526;
+  border: 1px solid #3c3c3c;
+  border-radius: 8px;
+  width: 620px;
+  max-width: 90vw;
+  max-height: 80vh;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.connect-dialog .cd-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 20px 12px;
+  border-bottom: 1px solid #3c3c3c;
+}
+.connect-dialog .cd-header h2 {
+  font-size: 16px; font-weight: 600; color: #ffffff; margin: 0;
+}
+.connect-dialog .cd-header .cd-close {
+  background: none; border: none; color: #888;
+  font-size: 18px; cursor: pointer; padding: 4px;
+}
+.connect-dialog .cd-header .cd-close:hover { color: #fff; }
+.connect-dialog .cd-body { padding: 16px 20px; overflow-y: auto; }
+.cd-input-group {
+  display: flex; gap: 8px; margin-bottom: 16px;
+}
+.cd-input-group input {
+  flex: 1;
+  background: #1e1e1e; border: 1px solid #555;
+  color: #d4d4d4; padding: 8px 12px;
+  border-radius: 4px; font-size: 13px;
+  font-family: "Cascadia Code", "Consolas", monospace;
+  outline: none;
+}
+.cd-input-group input:focus { border-color: #007acc; }
+.cd-input-group input::placeholder { color: #666; }
+.cd-input-group button {
+  background: #0e639c; border: 1px solid #1177bb;
+  color: #fff; padding: 8px 20px;
+  border-radius: 4px; font-size: 13px; font-weight: 600;
+  cursor: pointer; white-space: nowrap;
+}
+.cd-input-group button:hover { background: #1177bb; }
+.cd-input-group button:disabled { opacity: 0.5; cursor: default; }
+.cd-error {
+  background: #5a1d1d; border: 1px solid #8b3232;
+  color: #f88; padding: 8px 12px;
+  border-radius: 4px; font-size: 12px;
+  margin-bottom: 12px; display: none;
+}
+.cd-section-title {
+  font-size: 11px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.5px;
+  color: #888; margin-bottom: 8px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.cd-section-title button {
+  background: none; border: none; color: #666;
+  font-size: 11px; cursor: pointer;
+}
+.cd-section-title button:hover { color: #ccc; }
+.cd-recent-list { display: flex; flex-direction: column; gap: 4px; }
+
+/* ===== FILE BROWSER ===== */
+.cd-file-browser {
+  display: none;
+  border: 1px solid #3c3c3c;
+  border-radius: 4px;
+  margin-bottom: 12px;
+  background: #1e1e1e;
+  max-height: 300px;
+  overflow: hidden;
+  flex-direction: column;
+}
+.cd-file-browser.open { display: flex; }
+.cd-fb-header {
+  display: flex; align-items: center; gap: 6px;
+  padding: 6px 10px;
+  background: #252526;
+  border-bottom: 1px solid #3c3c3c;
+  font-size: 11px; color: #888;
+  flex-shrink: 0;
+}
+.cd-fb-header .fb-path {
+  flex: 1;
+  font-family: "Cascadia Code", "Consolas", monospace;
+  color: #d4d4d4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11px;
+}
+.cd-fb-header button {
+  background: #3c3c3c; border: 1px solid #555;
+  color: #ccc; padding: 2px 8px; border-radius: 3px;
+  font-size: 11px; cursor: pointer;
+}
+.cd-fb-header button:hover { background: #4a4a4a; }
+.cd-fb-list {
+  overflow-y: auto;
+  flex: 1;
+}
+.cd-fb-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 5px 12px;
+  cursor: pointer;
+  font-size: 12px;
+  color: #cccccc;
+  border-bottom: 1px solid #2d2d2d;
+}
+.cd-fb-item:hover { background: #2a2d2e; }
+.cd-fb-item.is-dir { color: #cccccc; }
+.cd-fb-item.is-file { color: #4ec9b0; }
+.cd-fb-item .fb-icon { width: 16px; text-align: center; flex-shrink: 0; }
+.cd-fb-item .fb-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cd-fb-item .fb-size { color: #888; font-size: 11px; flex-shrink: 0; }
+.cd-fb-empty { color: #666; font-size: 12px; text-align: center; padding: 20px; }
+.cd-recent-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 12px; background: #1e1e1e;
+  border: 1px solid #333; border-radius: 4px;
+  cursor: pointer; transition: border-color 0.15s;
+}
+.cd-recent-item:hover { border-color: #007acc; background: #1a2a3a; }
+.cd-recent-item.gone { opacity: 0.4; cursor: not-allowed; }
+.cd-recent-item .ri-icon { color: #519aba; font-size: 18px; flex-shrink: 0; }
+.cd-recent-item .ri-info { flex: 1; overflow: hidden; }
+.cd-recent-item .ri-name {
+  font-size: 13px; color: #d4d4d4;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.cd-recent-item .ri-path {
+  font-size: 11px; color: #888;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font-family: "Cascadia Code", "Consolas", monospace;
+}
+.cd-recent-item .ri-meta {
+  font-size: 11px; color: #666; flex-shrink: 0; text-align: right;
+}
+.cd-empty { color: #666; font-size: 12px; text-align: center; padding: 20px; }
+</style>
+</head>
+<body>
+
+<!-- CONNECTION BAR -->
+<div class="conn-bar disconnected" id="connBar">
+  <span class="conn-dot"></span>
+  <span class="conn-label">Database:</span>
+  <span class="conn-path" id="connPath">Not connected</span>
+  <span class="conn-size" id="connSize"></span>
+  <button class="conn-btn primary" id="btnOpenConnect" title="Open a database">&#x1F4C2; Open</button>
+  <button class="conn-btn danger" id="btnDisconnect" title="Disconnect" style="display:none;">&#x2715; Disconnect</button>
+</div>
+
+<!-- STATS RIBBON -->
+<div class="stats-ribbon" id="statsRibbon"></div>
+
+<!-- TAB BAR -->
+<div class="tab-bar">
+  <div class="tab-item" id="tabItem">
+    <span class="tab-icon">&#x2B21;</span>
+    <span id="tabName">chroma.sqlite3</span>
+  </div>
+</div>
+
+<!-- BREADCRUMB -->
+<div class="breadcrumb-bar" id="breadcrumbBar">
+  <span class="bc-active" id="bcDbName">chroma.sqlite3</span>
+</div>
+
+<!-- CONNECT DIALOG OVERLAY -->
+<div class="connect-overlay hidden" id="connectOverlay">
+  <div class="connect-dialog">
+    <div class="cd-header">
+      <h2>&#x2B21; Open ChromaDB Database</h2>
+      <button class="cd-close" id="btnCloseConnect">&#x2715;</button>
+    </div>
+    <div class="cd-body">
+      <div class="cd-input-group">
+        <input type="text" id="connectPathInput" placeholder="Enter full path to .sqlite3 file  (e.g. D:\data\chroma.sqlite3)" />
+        <button id="btnBrowse" title="Browse for file" style="background:#333;border:1px solid #555;color:#ccc;padding:8px 14px;border-radius:4px;font-size:13px;cursor:pointer;white-space:nowrap;">&#x1F4C2;</button>
+        <button id="btnDoConnect">Connect</button>
+      </div>
+      <div class="cd-file-browser" id="fileBrowser">
+        <div class="cd-fb-header">
+          <button id="fbUp" title="Go up">&#x2191;</button>
+          <span class="fb-path" id="fbPath"></span>
+          <button id="fbClose" title="Close">&#x2715;</button>
+        </div>
+        <div class="cd-fb-list" id="fbList"></div>
+      </div>
+      <div class="cd-error" id="connectError"></div>
+      <div class="cd-section-title">
+        <span>Recent Databases</span>
+        <button id="btnClearRecent">Clear all</button>
+      </div>
+      <div class="cd-recent-list" id="recentList">
+        <div class="cd-empty">No recent databases</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN LAYOUT -->
+<div class="main-layout">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar" id="sidebar">
+    <!-- COLLECTIONS section -->
+    <div class="collections-section" id="collectionsSection" style="display:none;">
+      <div class="sidebar-section-toggle" id="collToggle">
+        <span>COLLECTIONS <span id="collCountLabel" style="font-weight:400;text-transform:none;"></span></span>
+        <span class="toggle-arrow" id="collToggleArrow">&#x25BE;</span>
+      </div>
+      <div class="sidebar-filter">
+        <input type="text" id="collFilter" placeholder="Filter collections..." />
+      </div>
+      <div class="sidebar-list" id="collList"></div>
+    </div>
+    <!-- TABLES section -->
+    <div class="sidebar-section-toggle" id="tablesToggle">
+      <span>TABLES <span id="tableCountLabel" style="font-weight:400;text-transform:none;"></span></span>
+      <span class="toggle-arrow" id="tablesToggleArrow">&#x25BE;</span>
+    </div>
+    <div class="sidebar-filter" id="tablesFilterWrap">
+      <input type="text" id="tableFilter" placeholder="Filter tables..." />
+    </div>
+    <div class="sidebar-list" id="tableList"></div>
+  </div>
+
+  <!-- RESIZE HANDLE -->
+  <div class="resize-handle" id="resizeHandle"></div>
+
+  <!-- CONTENT -->
+  <div class="content" id="contentArea">
+
+    <!-- TOOLBAR -->
+    <div class="toolbar" id="toolbar" style="display:none;">
+      <div class="toolbar-left">
+        <span class="row-count">Rows: <span id="totalRowCount">0</span></span>
+        <div class="toolbar-filter">
+          <input type="text" id="globalFilter" placeholder="Filter rows..." />
+        </div>
+      </div>
+      <div class="toolbar-right">
+        <button class="toolbar-btn" id="btnSql" title="Open SQL Console">&#x2328; SQL</button>
+        <button class="toolbar-btn" id="btnRefresh" title="Refresh">&#x27F3; Refresh</button>
+        <div class="dropdown">
+          <button class="toolbar-btn" id="btnExport">&#x2913; Export</button>
+          <div class="dropdown-content" id="exportDropdown">
+            <div class="dd-item" data-format="csv">Export as CSV</div>
+            <div class="dd-item" data-format="json">Export as JSON</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TABLE CONTAINER -->
+    <div class="table-wrapper" id="tableWrapper">
+      <div class="empty-state" id="emptyState">
+        <div class="icon">&#x2B21;</div>
+        <div class="msg">Select a table from the sidebar</div>
+      </div>
+      <table class="data-table" id="dataTable" style="display:none;">
+        <thead id="tableHead"></thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+      <div class="loading-overlay" id="loadingOverlay" style="display:none;">
+        <div class="spinner"></div>
+      </div>
+    </div>
+
+    <!-- SQL PANEL -->
+    <div class="sql-panel" id="sqlPanel">
+      <div class="sql-panel-header">
+        <span>SQL Console (Read-Only)</span>
+        <div style="display:flex;gap:6px;">
+          <button class="toolbar-btn primary" id="btnRunSql" style="font-size:11px; padding:2px 8px;">&#x25B6; Run</button>
+          <button class="toolbar-btn" id="btnCloseSql" style="font-size:11px; padding:2px 8px;">&#x2715;</button>
+        </div>
+      </div>
+      <textarea class="sql-editor" id="sqlEditor" placeholder="Enter a SELECT query..." spellcheck="false"></textarea>
+    </div>
+
+    <!-- PAGINATION BAR -->
+    <div class="pagination-bar" id="paginationBar" style="display:none;">
+      <div class="pag-left">
+        <span id="pagRowInfo"></span>
+      </div>
+      <div class="pag-center">
+        <button class="pag-btn" id="pagFirst" title="First page">&#x27EA;</button>
+        <button class="pag-btn" id="pagPrev" title="Previous page">&#x25C2;</button>
+        <span>Page</span>
+        <input type="number" class="page-input" id="pagInput" min="1" value="1" />
+        <span>of <span id="pagTotal">1</span></span>
+        <button class="pag-btn" id="pagNext" title="Next page">&#x25B8;</button>
+        <button class="pag-btn" id="pagLast" title="Last page">&#x27EB;</button>
+      </div>
+      <div class="pag-right">
+        <span class="pag-info" id="pagSizeInfo">
+          <select id="pagSizeSelect" style="background:#0e639c;border:1px solid rgba(255,255,255,0.3);color:#fff;padding:1px 4px;font-size:11px;border-radius:3px;outline:none;">
+            <option value="50">50 rows</option>
+            <option value="100" selected>100 rows</option>
+            <option value="250">250 rows</option>
+            <option value="500">500 rows</option>
+            <option value="1000">1000 rows</option>
+          </select>
+        </span>
+        <span class="pag-info" id="queryTime"></span>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- TOOLTIP (hover) -->
+<div class="cell-tooltip" id="cellTooltip"></div>
+
+<!-- CELL DETAIL PANEL (click) -->
+<div class="cell-detail-overlay" id="cellDetailOverlay"></div>
+<div class="cell-detail-panel" id="cellDetailPanel" style="display:none">
+  <div class="cell-detail-header">
+    <div><span class="col-name" id="detailColName"></span><span class="row-info" id="detailRowInfo"></span></div>
+    <div class="cell-detail-actions">
+      <button id="detailCopyBtn" title="Copy to clipboard">Copy</button>
+      <button id="detailWrapBtn" title="Toggle word wrap">Wrap</button>
+      <button id="detailCloseBtn" title="Close (Esc)">&#x2715;</button>
+    </div>
+  </div>
+  <div class="cell-detail-body" id="detailBody"></div>
+</div>
+
+<!-- ROW DETAIL PANEL (collection view) -->
+<div class="row-detail-overlay" id="rowDetailOverlay"></div>
+<div class="row-detail-panel" id="rowDetailPanel">
+  <div class="row-detail-header">
+    <span class="rd-title" id="rowDetailTitle"></span>
+    <div class="row-detail-actions">
+      <button id="rowDetailCopyBtn" title="Copy as JSON">Copy JSON</button>
+      <button id="rowDetailCloseBtn" title="Close (Esc)">&#x2715;</button>
+    </div>
+  </div>
+  <div class="row-detail-body" id="rowDetailBody"></div>
+</div>
+
+<!-- CONTEXT MENU -->
+<div class="context-menu" id="contextMenu">
+  <div class="cm-item" data-action="copy-cell">Copy Cell Value</div>
+  <div class="cm-item" data-action="copy-row">Copy Row (JSON)</div>
+  <div class="cm-sep"></div>
+  <div class="cm-item" data-action="copy-col">Copy Column Name</div>
+</div>
+
+<script>
+// =====================================================================
+//  ChromaDB Viewer - VS Code Webview Frontend
+// =====================================================================
+
+// VS Code webview API
+const vscode = acquireVsCodeApi();
+const $ = (sel) => document.querySelector(sel);
+const $$ = (sel) => document.querySelectorAll(sel);
+
+// ---- Message-passing bridge (replaces fetch API) ----
+let _msgId = 0;
+const _pending = {};
+
+function callBackend(command, params = {}) {
+    return new Promise((resolve, reject) => {
+        const id = ++_msgId;
+        _pending[id] = { resolve, reject, t0: performance.now() };
+        vscode.postMessage({ id, command, params });
+    });
+}
+
+window.addEventListener('message', (event) => {
+    const msg = event.data;
+    // Response to a callBackend request
+    if (msg.id && _pending[msg.id]) {
+        const { resolve, reject, t0 } = _pending[msg.id];
+        delete _pending[msg.id];
+        if (msg.error) {
+            reject(new Error(msg.error));
+        } else {
+            const data = msg.data || {};
+            data._elapsed = performance.now() - t0;
+            resolve(data);
+        }
+        return;
+    }
+    // Push messages from extension
+    if (msg.type === 'connectToDb' && msg.path) {
+        doConnect(msg.path);
+    }
+});
+
+// ----------------------------- State ---------------------------------
+const state = {
+  tables: [],
+  currentTable: null,
+  schema: null,
+  rows: [],
+  columns: [],
+  page: 1,
+  pageSize: 100,
+  totalRows: 0,
+  totalPages: 1,
+  sortCol: null,
+  sortDir: 'asc',
+  filters: {},
+  globalFilter: '',
+  loading: false,
+  dbInfo: null,
+  selectedRow: null,
+  sqlMode: false,
+};
+
+// ----------------------------- Init ----------------------------------
+document.addEventListener('DOMContentLoaded', async () => {
+  setupEventListeners();
+  setupConnectListeners();
+  await checkConnectionStatus();
+});
+
+// ----------------------------- API calls -----------------------------
+async function loadDbInfo() {
+  try {
+    state.dbInfo = await callBackend('getInfo');
+    const name = state.dbInfo.filename;
+    $('#tabName').textContent = name;
+    $('#bcDbName').textContent = name;
+    updateConnBar(true, state.dbInfo);
+  } catch (e) {
+    console.error('Failed to load DB info:', e);
+    updateConnBar(false);
+  }
+}
+
+function _fmtNum(n) {
+  return n == null ? '\u2014' : Number(n).toLocaleString();
+}
+
+async function loadStats() {
+  const ribbon = $('#statsRibbon');
+  try {
+    const s = await callBackend('getStats');
+    const chips = [
+      { icon: '\uD83D\uDCCA', label: 'Tables', value: _fmtNum(s.total_tables) },
+      { icon: '\uD83D\uDCCB', label: 'Total Rows', value: _fmtNum(s.total_rows), cls: 'accent' },
+      { icon: '\uD83D\uDCE6', label: 'Collections', value: _fmtNum(s.collections) },
+      { icon: '\uD83E\uDDE9', label: 'Segments', value: _fmtNum(s.segments) },
+      { icon: '\uD83D\uDD22', label: 'Embeddings', value: _fmtNum(s.embeddings), cls: 'highlight' },
+      { icon: '\uD83D\uDCDD', label: 'Metadata Rows', value: _fmtNum(s.metadata_rows), cls: 'accent' },
+    ];
+    if (s.unique_documents > 0)
+      chips.push({ icon: '\uD83D\uDCC4', label: 'Unique Docs', value: _fmtNum(s.unique_documents) });
+    if (s.embedding_dimensions > 0)
+      chips.push({ icon: '\uD83D\uDCD0', label: 'Dimensions', value: _fmtNum(s.embedding_dimensions), cls: 'highlight' });
+    chips.push(
+      { icon: '\uD83D\uDDC2\uFE0F', label: 'Columns', value: _fmtNum(s.total_columns) },
+      { icon: '\uD83D\uDCBE', label: 'DB Size', value: s.size_mb + ' MB', cls: 'accent' },
+    );
+    ribbon.innerHTML = chips.map(c =>
+      `<span class="stat-chip ${c.cls || ''}">` +
+      `<span class="stat-icon">${c.icon}</span>` +
+      `<span class="stat-label">${c.label}</span>` +
+      `<span class="stat-value">${c.value}</span>` +
+      `</span>`
+    ).join('');
+    ribbon.classList.add('visible');
+  } catch (e) {
+    ribbon.classList.remove('visible');
+  }
+}
+
+function hideStats() {
+  $('#statsRibbon').classList.remove('visible');
+  $('#statsRibbon').innerHTML = '';
+}
+
+// ----------------------------- Connection management -----------------
+async function checkConnectionStatus() {
+  try {
+    const data = await callBackend('getStatus');
+    if (data.connected) {
+      state.dbInfo = data;
+      updateConnBar(true, data);
+      $('#tabName').textContent = data.filename;
+      $('#bcDbName').textContent = data.filename;
+      await loadTables();
+      loadStats();
+      try { await loadCollections(); } catch(_) {}
+    } else {
+      updateConnBar(false);
+      showConnectDialog();
+    }
+  } catch (e) {
+    updateConnBar(false);
+    showConnectDialog();
+  }
+}
+
+function updateConnBar(connected, info) {
+  const bar = $('#connBar');
+  if (connected && info) {
+    bar.classList.remove('disconnected');
+    $('#connPath').textContent = info.path || info.filename;
+    $('#connSize').textContent = info.size_mb ? `(${info.size_mb} MB)` : '';
+    $('#btnDisconnect').style.display = '';
+  } else {
+    bar.classList.add('disconnected');
+    $('#connPath').textContent = 'Not connected';
+    $('#connSize').textContent = '';
+    $('#btnDisconnect').style.display = 'none';
+  }
+}
+
+function showConnectDialog() {
+  $('#connectOverlay').classList.remove('hidden');
+  $('#connectError').style.display = 'none';
+  $('#connectPathInput').value = '';
+  loadRecentDatabases();
+  setTimeout(() => $('#connectPathInput').focus(), 100);
+}
+
+function hideConnectDialog() {
+  $('#connectOverlay').classList.add('hidden');
+}
+
+async function doConnect(path) {
+  const errEl = $('#connectError');
+  errEl.style.display = 'none';
+  $('#btnDoConnect').disabled = true;
+  $('#btnDoConnect').textContent = 'Connecting...';
+
+  try {
+    const data = await callBackend('connect', { path });
+    state.dbInfo = data;
+    updateConnBar(true, data);
+    $('#tabName').textContent = data.filename;
+    $('#bcDbName').textContent = data.filename;
+    hideConnectDialog();
+    resetTableView();
+    await loadTables();
+    loadStats();
+    try { await loadCollections(); } catch(_) {}
+  } catch (e) {
+    errEl.textContent = e.message;
+    errEl.style.display = 'block';
+  } finally {
+    $('#btnDoConnect').disabled = false;
+    $('#btnDoConnect').textContent = 'Connect';
+  }
+}
+
+async function doDisconnect() {
+  try { await callBackend('disconnect'); } catch (_) {}
+  state.dbInfo = null;
+  updateConnBar(false);
+  hideStats();
+  resetTableView();
+  showConnectDialog();
+}
+
+function resetTableView() {
+  state.currentTable = null;
+  state.tables = [];
+  state.schema = null;
+  state.rows = [];
+  state.columns = [];
+  state.page = 1;
+  state.totalRows = 0;
+  state.totalPages = 1;
+  state.sortCol = null;
+  state.sortDir = 'asc';
+  state.filters = {};
+  state.globalFilter = '';
+  state.selectedRow = null;
+  state.loading = false;
+  state.sqlMode = false;
+
+  const cv = $('#collectionView');
+  if (cv) cv.remove();
+  collState.currentCollId = null;
+  collState.currentCollName = null;
+  collState.collections = [];
+  collState._visibleMeta = [];
+  collState.documents = [];
+  const collSec = $('#collectionsSection');
+  if (collSec) collSec.style.display = 'none';
+  const collList = $('#collList');
+  if (collList) collList.innerHTML = '';
+
+  $('#tableWrapper').style.display = '';
+  $('#tableList').innerHTML = '';
+  $('#tableList').style.display = '';
+  const tablesFilterWrap = $('#tablesFilterWrap');
+  if (tablesFilterWrap) tablesFilterWrap.style.display = '';
+  const tablesArrow = $('#tablesToggleArrow');
+  if (tablesArrow) tablesArrow.classList.remove('collapsed');
+  const tableFilter = $('#tableFilter');
+  if (tableFilter) tableFilter.value = '';
+  const globalFilter = $('#globalFilter');
+  if (globalFilter) globalFilter.value = '';
+
+  const tcl = $('#tableCountLabel');
+  if (tcl) tcl.textContent = '';
+  $('#toolbar').style.display = 'none';
+  $('#paginationBar').style.display = 'none';
+  $('#dataTable').style.display = 'none';
+  $('#sqlPanel').classList.remove('open');
+  $('#emptyState').style.display = 'flex';
+  const emptyMsg = $('#emptyState')?.querySelector('.msg');
+  if (emptyMsg) emptyMsg.textContent = 'Select a table from the sidebar';
+  $('#tableHead').innerHTML = '';
+  $('#tableBody').innerHTML = '';
+  showLoading(false);
+}
+
+async function loadRecentDatabases() {
+  const listEl = $('#recentList');
+  try {
+    const data = await callBackend('getRecent');
+    if (!data.recent || data.recent.length === 0) {
+      listEl.innerHTML = '<div class="cd-empty">No recent databases</div>';
+      return;
+    }
+    listEl.innerHTML = '';
+    data.recent.forEach(entry => {
+      const item = document.createElement('div');
+      item.className = 'cd-recent-item' + (entry.exists ? '' : ' gone');
+      item.innerHTML = `
+        <span class="ri-icon">&#x2B21;</span>
+        <div class="ri-info">
+          <div class="ri-name">${escapeHtml(entry.filename)}</div>
+          <div class="ri-path">${escapeHtml(entry.path)}</div>
+        </div>
+        <div class="ri-meta">
+          <div>${entry.size_mb} MB</div>
+          <div>${entry.last_opened || ''}</div>
+        </div>
+      `;
+      if (entry.exists) {
+        item.addEventListener('click', () => doConnect(entry.path));
+        item.title = 'Click to connect';
+      } else {
+        item.title = 'File no longer exists';
+      }
+      listEl.appendChild(item);
+    });
+  } catch (e) {
+    listEl.innerHTML = '<div class="cd-empty">Could not load recent list</div>';
+  }
+}
+
+function setupConnectListeners() {
+  $('#btnOpenConnect').addEventListener('click', showConnectDialog);
+
+  $('#btnCloseConnect').addEventListener('click', () => {
+    if (state.dbInfo) hideConnectDialog();
+  });
+  $('#connectOverlay').addEventListener('click', (e) => {
+    if (e.target === $('#connectOverlay') && state.dbInfo) hideConnectDialog();
+  });
+
+  // Browse button — use VS Code native file dialog
+  $('#btnBrowse').addEventListener('click', async () => {
+    try {
+      const data = await callBackend('fileDialog');
+      if (data.path) {
+        $('#connectPathInput').value = data.path;
+        $('#fileBrowser').classList.remove('open');
+        return;
+      }
+    } catch (_) {
+      // Fall back to in-app browser
+      const browser = $('#fileBrowser');
+      if (browser.classList.contains('open')) {
+        browser.classList.remove('open');
+      } else {
+        const startPath = $('#connectPathInput').value.trim() || '';
+        browseDirectory(startPath);
+      }
+    }
+  });
+  $('#fbUp').addEventListener('click', () => {
+    if (_fbParent) browseDirectory(_fbParent);
+  });
+  $('#fbClose').addEventListener('click', () => {
+    $('#fileBrowser').classList.remove('open');
+  });
+
+  $('#btnDoConnect').addEventListener('click', () => {
+    const path = $('#connectPathInput').value.trim();
+    if (path) doConnect(path);
+  });
+  $('#connectPathInput').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      const path = $('#connectPathInput').value.trim();
+      if (path) doConnect(path);
+    }
+  });
+
+  $('#btnDisconnect').addEventListener('click', doDisconnect);
+
+  $('#btnClearRecent').addEventListener('click', async () => {
+    await callBackend('clearRecent');
+    loadRecentDatabases();
+  });
+}
+
+// ----------------------------- In-app File Browser -------------------
+let _fbParent = null;
+
+async function browseDirectory(startPath) {
+  const browser = $('#fileBrowser');
+  const listEl = $('#fbList');
+  browser.classList.add('open');
+  listEl.innerHTML = '<div class="cd-fb-empty">Loading...</div>';
+
+  let dirPath = startPath;
+  if (dirPath && (dirPath.endsWith('.sqlite3') || dirPath.endsWith('.db'))) {
+    dirPath = dirPath.replace(/[\\/][^\\/]*$/, '');
+  }
+
+  try {
+    const data = await callBackend('browse', { path: dirPath });
+
+    $('#fbPath').textContent = data.current;
+    $('#fbPath').title = data.current;
+    _fbParent = data.parent;
+    $('#fbUp').disabled = !data.parent;
+
+    listEl.innerHTML = '';
+
+    if (!data.entries.length) {
+      listEl.innerHTML = '<div class="cd-fb-empty">No .sqlite3 or .db files found</div>';
+      return;
+    }
+
+    const dirs = data.entries.filter(e => e.type === 'dir');
+    const files = data.entries.filter(e => e.type === 'file');
+
+    dirs.forEach(entry => {
+      const item = document.createElement('div');
+      item.className = 'cd-fb-item is-dir';
+      item.innerHTML = `
+        <span class="fb-icon">\uD83D\uDCC1</span>
+        <span class="fb-name">${escapeHtml(entry.name)}</span>
+      `;
+      item.addEventListener('click', () => browseDirectory(entry.path));
+      listEl.appendChild(item);
+    });
+
+    files.forEach(entry => {
+      const item = document.createElement('div');
+      item.className = 'cd-fb-item is-file';
+      item.innerHTML = `
+        <span class="fb-icon">\u26C1</span>
+        <span class="fb-name">${escapeHtml(entry.name)}</span>
+        <span class="fb-size">${entry.size_mb} MB</span>
+      `;
+      item.addEventListener('click', () => {
+        $('#connectPathInput').value = entry.path;
+        browser.classList.remove('open');
+      });
+      listEl.appendChild(item);
+    });
+  } catch (e) {
+    listEl.innerHTML = `<div class="cd-fb-empty" style="color:#e88;">${escapeHtml(e.message)}</div>`;
+  }
+}
+
+async function loadTables() {
+  try {
+    const data = await callBackend('getTables');
+    state.tables = data.tables || [];
+    renderTableList();
+  } catch (e) {
+    console.error('Failed to load tables:', e);
+    // Show error in UI
+    const list = $('#tableList');
+    list.innerHTML = `<div style="padding:8px 12px;color:#e88;font-size:11px;">Error loading tables: ${e.message || e}</div>`;
+  }
+}
+
+async function loadTableSchema(tableName) {
+  const data = await callBackend('getTableSchema', { tableName });
+  state.schema = data;
+  return data;
+}
+
+async function loadTableRows() {
+  if (!state.currentTable) return;
+
+  state.loading = true;
+  showLoading(true);
+
+  const params = {
+    tableName: state.currentTable,
+    page: state.page,
+    pageSize: state.pageSize,
+    sortCol: state.sortCol,
+    sortDir: state.sortDir,
+    filters: Object.keys(state.filters).length > 0 ? state.filters : null,
+  };
+
+  try {
+    const data = await callBackend('getTableRows', params);
+    state.rows = data.rows;
+    state.columns = data.columns;
+    state.totalRows = data.total_rows;
+    state.totalPages = data.total_pages;
+    state.page = data.page;
+
+    renderTableData();
+    renderPagination();
+    $('#totalRowCount').textContent = state.totalRows.toLocaleString();
+    if (data._elapsed) {
+      $('#queryTime').textContent = `${Math.round(data._elapsed)} ms`;
+    }
+  } catch (e) {
+    console.error('Failed to load rows:', e);
+  } finally {
+    state.loading = false;
+    showLoading(false);
+  }
+}
+
+// ----------------------------- Sidebar rendering ---------------------
+function renderTableList(filter = '') {
+  const list = $('#tableList');
+  list.innerHTML = '';
+  const filterLower = filter.toLowerCase();
+  const filtered = state.tables.filter(t =>
+    !filterLower || t.name.toLowerCase().includes(filterLower)
+  );
+
+  $('#tableCountLabel').textContent = `${filtered.length}`;
+
+  filtered.forEach(t => {
+    const item = document.createElement('div');
+    item.className = 'sidebar-item' + (t.name === state.currentTable ? ' active' : '');
+    item.innerHTML = `
+      <span class="tbl-icon">&#x25B8;</span>
+      <span class="tbl-name" title="${t.name}">${t.name}</span>
+      <span class="tbl-count">${formatNumber(t.row_count)}</span>
+    `;
+    item.addEventListener('click', () => selectTable(t.name));
+    list.appendChild(item);
+  });
+}
+
+// ----------------------------- Table selection -----------------------
+async function selectTable(tableName) {
+  if (state.loading) return;
+
+  const cv = $('#collectionView');
+  if (cv) cv.remove();
+  collState.currentCollId = null;
+  renderCollectionList($('#collFilter').value);
+
+  state.currentTable = tableName;
+  state.page = 1;
+  state.sortCol = null;
+  state.sortDir = 'asc';
+  state.filters = {};
+  state.selectedRow = null;
+
+  $('#tableWrapper').style.display = '';
+
+  $$('.sidebar-item').forEach(el => el.classList.remove('active'));
+  $$('.sidebar-item').forEach(el => {
+    if (el.querySelector('.tbl-name').textContent === tableName) {
+      el.classList.add('active');
+    }
+  });
+
+  updateBreadcrumb(tableName);
+
+  $('#toolbar').style.display = 'flex';
+  $('#paginationBar').style.display = 'flex';
+  $('#emptyState').style.display = 'none';
+  $('#dataTable').style.display = 'table';
+
+  try {
+    await loadTableSchema(tableName);
+    renderTableHeaders();
+    await loadTableRows();
+  } catch (e) {
+    console.error('Error loading table:', e);
+  }
+}
+
+// ----------------------------- Breadcrumb ----------------------------
+function updateBreadcrumb(tableName) {
+  const bar = $('#breadcrumbBar');
+  if (state.dbInfo) {
+    const parts = state.dbInfo.path.replace(/\\/g, '/').split('/');
+    const lastParts = parts.slice(-4);
+    bar.innerHTML = lastParts.map((p, i) => {
+      const isLast = i === lastParts.length - 1;
+      return `<span class="${isLast ? 'bc-active' : ''}">${p}</span>${isLast ? '' : '<span class="bc-sep">\u203A</span>'}`;
+    }).join('');
+    if (tableName) {
+      bar.innerHTML += `<span class="bc-sep">\u203A</span><span class="bc-active" style="color:#4fc1ff;">${tableName}</span>`;
+    }
+  }
+}
+
+// ----------------------------- Table headers -------------------------
+function renderTableHeaders() {
+  const thead = $('#tableHead');
+  thead.innerHTML = '';
+  if (!state.schema) return;
+  const cols = state.schema.columns;
+
+  const headerRow = document.createElement('tr');
+
+  const rowNumTh = document.createElement('th');
+  rowNumTh.className = 'row-num';
+  rowNumTh.textContent = '#';
+  headerRow.appendChild(rowNumTh);
+
+  cols.forEach(col => {
+    const th = document.createElement('th');
+    th.className = 'sortable';
+    th.dataset.col = col.name;
+
+    const typeClass = getTypeClass(col.type);
+    const typeLabel = (col.type || 'ANY').substring(0, 4).toUpperCase();
+    const sortIndicator = state.sortCol === col.name
+      ? (state.sortDir === 'asc' ? '\u25B2' : '\u25BC')
+      : '';
+
+    th.innerHTML = `
+      <div class="col-header">
+        <span class="col-type-icon ${typeClass}" title="${col.type || 'ANY'}">${typeLabel.charAt(0)}</span>
+        <span class="col-name" title="${col.name}">${col.name}</span>
+        ${col.pk ? '<span style="color:#c5943a;font-size:10px;" title="Primary Key">\uD83D\uDD11</span>' : ''}
+        <span class="sort-indicator">${sortIndicator}</span>
+      </div>
+      <div class="col-resizer"></div>
+    `;
+
+    th.addEventListener('click', (e) => {
+      if (e.target.classList.contains('col-resizer')) return;
+      toggleSort(col.name);
+    });
+
+    headerRow.appendChild(th);
+  });
+
+  thead.appendChild(headerRow);
+
+  const filterRow = document.createElement('tr');
+  filterRow.className = 'filter-row';
+
+  const rowNumFilter = document.createElement('th');
+  rowNumFilter.className = 'row-num';
+  filterRow.appendChild(rowNumFilter);
+
+  cols.forEach(col => {
+    const th = document.createElement('th');
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.placeholder = `Filter...`;
+    input.dataset.col = col.name;
+    input.value = state.filters[col.name] || '';
+
+    let filterTimeout;
+    input.addEventListener('input', (e) => {
+      clearTimeout(filterTimeout);
+      filterTimeout = setTimeout(() => {
+        const val = e.target.value.trim();
+        if (val) {
+          state.filters[col.name] = val;
+        } else {
+          delete state.filters[col.name];
+        }
+        state.page = 1;
+        loadTableRows();
+      }, 300);
+    });
+
+    th.appendChild(input);
+    filterRow.appendChild(th);
+  });
+
+  thead.appendChild(filterRow);
+  setupColumnResize();
+}
+
+// ----------------------------- Table data ----------------------------
+function renderTableData() {
+  const tbody = $('#tableBody');
+  tbody.innerHTML = '';
+
+  if (!state.rows.length) {
+    const tr = document.createElement('tr');
+    const td = document.createElement('td');
+    td.colSpan = (state.schema?.columns.length || 1) + 1;
+    td.style.textAlign = 'center';
+    td.style.padding = '24px';
+    td.style.color = '#888';
+    td.textContent = 'No data';
+    tr.appendChild(td);
+    tbody.appendChild(tr);
+    return;
+  }
+
+  const schemaCols = state.schema ? state.schema.columns.map(c => c.name) : [];
+  const startNum = (state.page - 1) * state.pageSize + 1;
+
+  const fragment = document.createDocumentFragment();
+
+  state.rows.forEach((row, idx) => {
+    const tr = document.createElement('tr');
+    tr.dataset.idx = idx;
+    if (idx === state.selectedRow) tr.classList.add('selected');
+
+    tr.addEventListener('click', () => {
+      state.selectedRow = idx;
+      $$('#tableBody tr').forEach(r => r.classList.remove('selected'));
+      tr.classList.add('selected');
+    });
+
+    const numTd = document.createElement('td');
+    numTd.className = 'row-num';
+    numTd.textContent = startNum + idx;
+    tr.appendChild(numTd);
+
+    const dataCols = state.columns.filter(c => c !== '__rowid__');
+    dataCols.forEach(colName => {
+      const td = document.createElement('td');
+      const val = row[colName];
+
+      if (val === null || val === undefined) {
+        td.innerHTML = '<span class="null-value">NULL</span>';
+      } else if (typeof val === 'string' && val.startsWith('[BLOB')) {
+        td.innerHTML = `<span class="blob-value">${escapeHtml(val)}</span>`;
+      } else if (typeof val === 'number') {
+        td.innerHTML = `<span class="num-value">${val}</span>`;
+      } else {
+        const strVal = String(val);
+        if (strVal.length > 200) {
+          td.innerHTML = `<span class="str-value" title="Click to expand">${escapeHtml(strVal.substring(0, 200))}\u2026</span>`;
+        } else {
+          td.innerHTML = `<span class="str-value">${escapeHtml(strVal)}</span>`;
+        }
+      }
+
+      td.dataset.col = colName;
+      td.dataset.idx = idx;
+      tr.appendChild(td);
+    });
+
+    fragment.appendChild(tr);
+  });
+
+  tbody.appendChild(fragment);
+}
+
+// ----------------------------- Sorting -------------------------------
+function toggleSort(colName) {
+  if (state.sortCol === colName) {
+    state.sortDir = state.sortDir === 'asc' ? 'desc' : 'asc';
+  } else {
+    state.sortCol = colName;
+    state.sortDir = 'asc';
+  }
+  state.page = 1;
+
+  $$('#tableHead tr:first-child th .sort-indicator').forEach(el => {
+    const th = el.closest('th');
+    if (th && th.dataset.col === colName) {
+      el.textContent = state.sortDir === 'asc' ? '\u25B2' : '\u25BC';
+    } else {
+      el.textContent = '';
+    }
+  });
+
+  loadTableRows();
+}
+
+// ----------------------------- Pagination ----------------------------
+function renderPagination() {
+  $('#pagInput').value = state.page;
+  $('#pagTotal').textContent = state.totalPages;
+  $('#pagFirst').disabled = state.page <= 1;
+  $('#pagPrev').disabled = state.page <= 1;
+  $('#pagNext').disabled = state.page >= state.totalPages;
+  $('#pagLast').disabled = state.page >= state.totalPages;
+
+  const start = (state.page - 1) * state.pageSize + 1;
+  const end = Math.min(state.page * state.pageSize, state.totalRows);
+  $('#pagRowInfo').textContent = state.totalRows > 0
+    ? `Showing ${start.toLocaleString()} \u2013 ${end.toLocaleString()} of ${state.totalRows.toLocaleString()}`
+    : 'No rows';
+}
+
+function goToPage(p) {
+  const page = Math.max(1, Math.min(p, state.totalPages));
+  if (page !== state.page) {
+    state.page = page;
+    loadTableRows();
+  }
+}
+
+// ----------------------------- Event listeners -----------------------
+function setupEventListeners() {
+  $('#tableFilter').addEventListener('input', (e) => {
+    renderTableList(e.target.value);
+  });
+
+  $('#pagFirst').addEventListener('click', () => goToPage(1));
+  $('#pagPrev').addEventListener('click', () => goToPage(state.page - 1));
+  $('#pagNext').addEventListener('click', () => goToPage(state.page + 1));
+  $('#pagLast').addEventListener('click', () => goToPage(state.totalPages));
+  $('#pagInput').addEventListener('change', (e) => goToPage(parseInt(e.target.value) || 1));
+  $('#pagInput').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') goToPage(parseInt(e.target.value) || 1);
+  });
+
+  $('#pagSizeSelect').addEventListener('change', (e) => {
+    state.pageSize = parseInt(e.target.value);
+    state.page = 1;
+    loadTableRows();
+  });
+
+  $('#btnRefresh').addEventListener('click', () => {
+    if (state.currentTable) loadTableRows();
+  });
+
+  let globalFilterTimeout;
+  $('#globalFilter').addEventListener('input', (e) => {
+    clearTimeout(globalFilterTimeout);
+    globalFilterTimeout = setTimeout(() => {
+      state.globalFilter = e.target.value.trim();
+      state.page = 1;
+      loadTableRows();
+    }, 300);
+  });
+
+  // SQL panel
+  $('#btnSql').addEventListener('click', () => {
+    state.sqlMode = !state.sqlMode;
+    $('#sqlPanel').classList.toggle('open', state.sqlMode);
+    if (state.sqlMode) {
+      $('#sqlEditor').focus();
+      if (!$('#sqlEditor').value && state.currentTable) {
+        $('#sqlEditor').value = `SELECT * FROM "${state.currentTable}" LIMIT 100`;
+      }
+    }
+  });
+  $('#btnCloseSql').addEventListener('click', () => {
+    state.sqlMode = false;
+    $('#sqlPanel').classList.remove('open');
+  });
+  $('#btnRunSql').addEventListener('click', runSQL);
+  $('#sqlEditor').addEventListener('keydown', (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+      e.preventDefault();
+      runSQL();
+    }
+  });
+
+  // Export dropdown
+  $('#btnExport').addEventListener('click', (e) => {
+    e.stopPropagation();
+    $('#exportDropdown').classList.toggle('open');
+  });
+  document.addEventListener('click', () => {
+    $('#exportDropdown').classList.remove('open');
+  });
+  $$('#exportDropdown .dd-item').forEach(item => {
+    item.addEventListener('click', () => {
+      const format = item.dataset.format;
+      exportTable(format);
+      $('#exportDropdown').classList.remove('open');
+    });
+  });
+
+  // Context menu
+  $('#tableWrapper').addEventListener('contextmenu', (e) => {
+    e.preventDefault();
+    const td = e.target.closest('td');
+    if (!td || td.classList.contains('row-num')) return;
+
+    const menu = $('#contextMenu');
+    menu.style.display = 'block';
+    menu.style.left = e.clientX + 'px';
+    menu.style.top = e.clientY + 'px';
+    menu.dataset.col = td.dataset.col;
+    menu.dataset.idx = td.dataset.idx;
+  });
+  document.addEventListener('click', () => {
+    $('#contextMenu').style.display = 'none';
+  });
+  $$('#contextMenu .cm-item').forEach(item => {
+    item.addEventListener('click', () => {
+      const action = item.dataset.action;
+      const menu = $('#contextMenu');
+      const idx = parseInt(menu.dataset.idx);
+      const col = menu.dataset.col;
+      handleContextAction(action, idx, col);
+    });
+  });
+
+  // Cell tooltip on hover
+  let tooltipTimeout, tooltipHideTimeout;
+  const tooltip = $('#cellTooltip');
+
+  function showTooltip(td) {
+    clearTimeout(tooltipHideTimeout);
+    const idx = parseInt(td.dataset.idx);
+    const col = td.dataset.col;
+    if (isNaN(idx) || !col || !state.rows[idx]) return;
+    const val = state.rows[idx][col];
+    const strVal = val === null ? 'NULL' : String(val);
+    if (strVal.length <= 50) return;
+    tooltip.textContent = strVal;
+    tooltip.style.display = 'block';
+    const rect = td.getBoundingClientRect();
+    tooltip.style.left = Math.min(rect.left, window.innerWidth - 620) + 'px';
+    tooltip.style.top = (rect.bottom + 4) + 'px';
+  }
+  function hideTooltip() {
+    tooltipHideTimeout = setTimeout(() => {
+      tooltip.style.display = 'none';
+    }, 200);
+  }
+
+  $('#tableWrapper').addEventListener('mouseover', (e) => {
+    const td = e.target.closest('td');
+    if (!td || td.classList.contains('row-num')) return;
+    clearTimeout(tooltipTimeout);
+    clearTimeout(tooltipHideTimeout);
+    tooltipTimeout = setTimeout(() => showTooltip(td), 400);
+  });
+  $('#tableWrapper').addEventListener('mouseout', (e) => {
+    clearTimeout(tooltipTimeout);
+    hideTooltip();
+  });
+  tooltip.addEventListener('mouseenter', () => clearTimeout(tooltipHideTimeout));
+  tooltip.addEventListener('mouseleave', () => hideTooltip());
+
+  // Cell detail panel (click to open persistent view)
+  function openCellDetail(idx, col) {
+    const val = state.rows[idx]?.[col];
+    const strVal = val === null ? 'NULL' : String(val);
+    $('#detailColName').textContent = col;
+    $('#detailRowInfo').textContent = `  Row ${(state.page - 1) * state.pageSize + idx + 1}`;
+    $('#detailBody').textContent = strVal;
+    $('#cellDetailOverlay').style.display = 'block';
+    $('#cellDetailPanel').style.display = 'flex';
+    tooltip.style.display = 'none';
+    clearTimeout(tooltipTimeout);
+  }
+  function closeCellDetail() {
+    $('#cellDetailOverlay').style.display = 'none';
+    $('#cellDetailPanel').style.display = 'none';
+  }
+
+  $('#tableWrapper').addEventListener('click', (e) => {
+    const td = e.target.closest('td');
+    if (!td || td.classList.contains('row-num')) return;
+    const idx = parseInt(td.dataset.idx);
+    const col = td.dataset.col;
+    if (isNaN(idx) || !col) return;
+    const val = state.rows[idx]?.[col];
+    const strVal = val === null ? 'NULL' : String(val);
+    if (strVal.length <= 50) return;
+    openCellDetail(idx, col);
+  });
+
+  $('#detailCloseBtn').addEventListener('click', closeCellDetail);
+  $('#cellDetailOverlay').addEventListener('click', closeCellDetail);
+  $('#detailCopyBtn').addEventListener('click', () => {
+    navigator.clipboard.writeText($('#detailBody').textContent);
+    const btn = $('#detailCopyBtn');
+    btn.textContent = 'Copied!';
+    setTimeout(() => btn.textContent = 'Copy', 1200);
+  });
+  $('#detailWrapBtn').addEventListener('click', () => {
+    const body = $('#detailBody');
+    const nowWrap = body.style.whiteSpace !== 'nowrap';
+    body.style.whiteSpace = nowWrap ? 'nowrap' : 'pre-wrap';
+    body.style.wordBreak = nowWrap ? 'normal' : 'break-all';
+    $('#detailWrapBtn').textContent = nowWrap ? 'Wrap' : 'No Wrap';
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && $('#cellDetailPanel').style.display === 'flex') {
+      closeCellDetail();
+    }
+  });
+
+  // Sidebar resize
+  setupSidebarResize();
+
+  // Keyboard shortcuts
+  document.addEventListener('keydown', (e) => {
+    if (e.ctrlKey && e.key === 'f') {
+      e.preventDefault();
+      $('#globalFilter').focus();
+    }
+  });
+}
+
+// ----------------------------- SQL execution -------------------------
+async function runSQL() {
+  const sql = $('#sqlEditor').value.trim();
+  if (!sql) return;
+
+  state.loading = true;
+  showLoading(true);
+
+  try {
+    const data = await callBackend('executeQuery', { sql });
+
+    state.schema = {
+      columns: data.columns.map((c, i) => ({ cid: i, name: c, type: 'ANY', pk: false })),
+    };
+    state.rows = data.rows;
+    state.columns = data.columns;
+    state.totalRows = data.row_count;
+    state.totalPages = 1;
+    state.page = 1;
+
+    $('#totalRowCount').textContent = data.row_count.toLocaleString();
+    if (data._elapsed) {
+      $('#queryTime').textContent = `${Math.round(data._elapsed)} ms`;
+    }
+
+    renderTableHeaders();
+    renderTableData();
+    renderPagination();
+
+    $('#toolbar').style.display = 'flex';
+    $('#paginationBar').style.display = 'flex';
+    $('#emptyState').style.display = 'none';
+    $('#dataTable').style.display = 'table';
+  } catch (e) {
+    alert('SQL Error: ' + e.message);
+  } finally {
+    state.loading = false;
+    showLoading(false);
+  }
+}
+
+// ----------------------------- Export --------------------------------
+async function exportTable(format) {
+  if (!state.currentTable) return;
+  try {
+    await callBackend('exportTable', {
+      tableName: state.currentTable,
+      format: format,
+      filters: Object.keys(state.filters).length > 0 ? state.filters : null,
+    });
+  } catch (e) {
+    console.error('Export failed:', e);
+  }
+}
+
+// ----------------------------- Context menu actions ------------------
+function handleContextAction(action, idx, col) {
+  const row = state.rows[idx];
+  if (!row) return;
+
+  let text = '';
+  switch (action) {
+    case 'copy-cell':
+      text = row[col] === null ? 'NULL' : String(row[col]);
+      break;
+    case 'copy-row':
+      text = JSON.stringify(row, null, 2);
+      break;
+    case 'copy-col':
+      text = col;
+      break;
+  }
+
+  navigator.clipboard.writeText(text).catch(() => {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+  });
+}
+
+// ----------------------------- Sidebar resize ------------------------
+function setupSidebarResize() {
+  const handle = $('#resizeHandle');
+  const sidebar = $('#sidebar');
+  let startX, startW;
+
+  handle.addEventListener('mousedown', (e) => {
+    e.preventDefault();
+    startX = e.clientX;
+    startW = sidebar.offsetWidth;
+    handle.classList.add('active');
+
+    const onMove = (e) => {
+      const diff = e.clientX - startX;
+      const newWidth = Math.max(180, Math.min(600, startW + diff));
+      sidebar.style.width = newWidth + 'px';
+    };
+    const onUp = () => {
+      handle.classList.remove('active');
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+    };
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  });
+}
+
+// ----------------------------- Column resize -------------------------
+function setupColumnResize() {
+  $$('.col-resizer').forEach(resizer => {
+    resizer.addEventListener('mousedown', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const th = resizer.closest('th');
+      const startX = e.clientX;
+      const startW = th.offsetWidth;
+
+      const onMove = (e) => {
+        const diff = e.clientX - startX;
+        const newW = Math.max(60, startW + diff);
+        th.style.width = newW + 'px';
+        th.style.minWidth = newW + 'px';
+        th.style.maxWidth = newW + 'px';
+      };
+      const onUp = () => {
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+      };
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+    });
+  });
+}
+
+// ----------------------------- Helpers -------------------------------
+function showLoading(show) {
+  $('#loadingOverlay').style.display = show ? 'flex' : 'none';
+}
+
+function getTypeClass(type) {
+  const t = (type || '').toUpperCase();
+  if (t.includes('INT') || t.includes('INTEGER')) return 'type-int';
+  if (t.includes('REAL') || t.includes('FLOAT') || t.includes('DOUBLE') || t.includes('NUMERIC')) return 'type-real';
+  if (t.includes('TEXT') || t.includes('VARCHAR') || t.includes('CHAR')) return 'type-text';
+  if (t.includes('BLOB')) return 'type-blob';
+  return 'type-any';
+}
+
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+function formatNumber(n) {
+  if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
+  if (n >= 1000) return (n / 1000).toFixed(1) + 'K';
+  return String(n);
+}
+
+// =====================================================================
+//  Collection Browser
+// =====================================================================
+
+const collState = {
+  collections: [],
+  currentCollId: null,
+  currentCollName: null,
+  page: 1,
+  pageSize: 50,
+  total: 0,
+  totalPages: 1,
+  search: '',
+};
+
+async function loadCollections() {
+  try {
+    const data = await callBackend('getCollections');
+    if (!data.supported || !data.collections.length) {
+      $('#collectionsSection').style.display = 'none';
+      return;
+    }
+    collState.collections = data.collections;
+    $('#collectionsSection').style.display = '';
+    renderCollectionList();
+  } catch (e) {
+    $('#collectionsSection').style.display = 'none';
+  }
+}
+
+function renderCollectionList(filter = '') {
+  const list = $('#collList');
+  list.innerHTML = '';
+  const fl = filter.toLowerCase();
+  const filtered = collState.collections.filter(c =>
+    !fl || c.name.toLowerCase().includes(fl) ||
+    Object.values(c.metadata || {}).some(v => String(v).toLowerCase().includes(fl))
+  );
+  $('#collCountLabel').textContent = `${filtered.length}`;
+
+  filtered.forEach(c => {
+    const item = document.createElement('div');
+    item.className = 'sidebar-item' + (c.id === collState.currentCollId ? ' active' : '');
+    const desc = c.metadata?.description ? ` \u2014 ${c.metadata.description.substring(0, 40)}` : '';
+    item.innerHTML = `
+      <span class="coll-icon">\u25C6</span>
+      <span class="tbl-name" title="${escapeHtml(c.name)}${escapeHtml(desc)}">${escapeHtml(c.name)}</span>
+      <span class="tbl-count">${formatNumber(c.document_count)}</span>
+    `;
+    item.addEventListener('click', () => openCollection(c));
+    list.appendChild(item);
+  });
+}
+
+async function openCollection(coll) {
+  collState.currentCollId = coll.id;
+  collState.currentCollName = coll.name;
+  collState.page = 1;
+  collState.search = '';
+
+  state.currentTable = null;
+  $$('.sidebar-item').forEach(el => el.classList.remove('active'));
+  renderCollectionList($('#collFilter').value);
+
+  updateBreadcrumb(null);
+  const bar = $('#breadcrumbBar');
+  bar.innerHTML += `<span class="bc-sep">\u203A</span><span style="color:#569cd6;">collections</span><span class="bc-sep">\u203A</span><span class="bc-active" style="color:#4ec9b0;">${escapeHtml(coll.name)}</span>`;
+
+  const content = $('#contentArea');
+  $('#toolbar').style.display = 'none';
+  $('#paginationBar').style.display = 'none';
+  $('#dataTable').style.display = 'none';
+  $('#emptyState').style.display = 'none';
+  $('#tableWrapper').style.display = 'none';
+  if ($('#sqlPanel').classList.contains('open')) {
+    state.sqlMode = false;
+    $('#sqlPanel').classList.remove('open');
+  }
+
+  const prev = $('#collectionView');
+  if (prev) prev.remove();
+
+  const view = document.createElement('div');
+  view.id = 'collectionView';
+  view.style.cssText = 'display:flex;flex-direction:column;flex:1;overflow:hidden;';
+
+  const metaChips = Object.entries(coll.metadata || {}).map(([k, v]) =>
+    `<span class="cdh-chip"><b>${escapeHtml(k)}:</b> ${escapeHtml(String(v).substring(0, 60))}</span>`
+  ).join('');
+
+  view.innerHTML = `
+    <div class="coll-detail-header">
+      <span class="cdh-name">\u25C6 ${escapeHtml(coll.name)}</span>
+      <span class="cdh-chip"><b>Docs:</b> ${coll.document_count.toLocaleString()}</span>
+      ${coll.dimension ? `<span class="cdh-chip"><b>Dim:</b> ${coll.dimension}</span>` : ''}
+      ${metaChips}
+    </div>
+    <div class="coll-search-bar">
+      <span class="row-count">Rows: <span id="collTotalRowCount">0</span></span>
+      <input type="text" id="collSearchInput" placeholder="Search documents..." />
+      <button class="toolbar-btn" id="collBackBtn">\u2190 Back to tables</button>
+    </div>
+    <div class="coll-docs-list" id="collDocsList">
+      <table class="data-table" id="collDataTable" style="display:none;">
+        <thead id="collTableHead"></thead>
+        <tbody id="collTableBody"></tbody>
+      </table>
+      <div class="loading-overlay" id="collLoadingOverlay" style="display:none;"><div class="spinner"></div></div>
+    </div>
+    <div class="pagination-bar" id="collPagBar">
+      <div class="pag-left"><span id="collPagInfo"></span></div>
+      <div class="pag-center">
+        <button class="pag-btn" id="collPagFirst" title="First">&#x27EA;</button>
+        <button class="pag-btn" id="collPagPrev">&#x25C2;</button>
+        <span>Page</span>
+        <input type="number" class="page-input" id="collPagInput" min="1" value="1" />
+        <span>of <span id="collPagTotal">1</span></span>
+        <button class="pag-btn" id="collPagNext">&#x25B8;</button>
+        <button class="pag-btn" id="collPagLast" title="Last">&#x27EB;</button>
+      </div>
+      <div class="pag-right">
+        <span class="pag-info">
+          <select id="collPagSizeSelect" style="background:#0e639c;border:1px solid rgba(255,255,255,0.3);color:#fff;padding:1px 4px;font-size:11px;border-radius:3px;outline:none;">
+            <option value="50" selected>50 rows</option>
+            <option value="100">100 rows</option>
+            <option value="250">250 rows</option>
+            <option value="500">500 rows</option>
+            <option value="1000">1000 rows</option>
+          </select>
+        </span>
+        <span class="pag-info" id="collPagTime"></span>
+      </div>
+    </div>
+  `;
+
+  const tableWrapper = $('#tableWrapper');
+  tableWrapper.parentNode.insertBefore(view, tableWrapper);
+
+  let searchTimeout;
+  $('#collSearchInput').addEventListener('input', (e) => {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => {
+      collState.search = e.target.value.trim();
+      collState.page = 1;
+      loadCollectionDocs();
+    }, 300);
+  });
+
+  $('#collBackBtn').addEventListener('click', closeCollectionView);
+  $('#collPagFirst').addEventListener('click', () => collGoToPage(1));
+  $('#collPagPrev').addEventListener('click', () => collGoToPage(collState.page - 1));
+  $('#collPagNext').addEventListener('click', () => collGoToPage(collState.page + 1));
+  $('#collPagLast').addEventListener('click', () => collGoToPage(collState.totalPages));
+  $('#collPagInput').addEventListener('change', (e) => collGoToPage(parseInt(e.target.value) || 1));
+  $('#collPagInput').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') collGoToPage(parseInt(e.target.value) || 1);
+  });
+  $('#collPagSizeSelect').addEventListener('change', (e) => {
+    collState.pageSize = parseInt(e.target.value);
+    collState.page = 1;
+    loadCollectionDocs();
+  });
+
+  await loadCollectionDocs();
+}
+
+function closeCollectionView() {
+  const view = $('#collectionView');
+  if (view) view.remove();
+  collState.currentCollId = null;
+  collState.currentCollName = null;
+  renderCollectionList($('#collFilter').value);
+  $('#tableWrapper').style.display = '';
+  $('#emptyState').style.display = 'flex';
+  $('#emptyState').querySelector('.msg').textContent = 'Select a table from the sidebar';
+  updateBreadcrumb(null);
+}
+
+async function loadCollectionDocs() {
+  const tbl = $('#collDataTable');
+  const overlay = $('#collLoadingOverlay');
+  if (!tbl) return;
+  if (overlay) overlay.style.display = 'flex';
+
+  try {
+    const data = await callBackend('getCollectionDocs', {
+      collectionId: collState.currentCollId,
+      page: collState.page,
+      pageSize: collState.pageSize,
+      search: collState.search || null,
+    });
+    collState.total = data.total;
+    collState.totalPages = data.total_pages;
+    collState.page = data.page;
+    collState.metadataKeys = data.metadata_keys || [];
+    collState.columns = data.columns || ['embedding_id', 'document'];
+    collState.documents = data.documents;
+
+    renderCollTableHeaders();
+    renderCollTableBody();
+    renderCollPagination();
+
+    const rc = $('#collTotalRowCount');
+    if (rc) rc.textContent = collState.total.toLocaleString();
+
+    tbl.style.display = 'table';
+
+    if (data._elapsed) {
+      const te = $('#collPagTime');
+      if (te) te.textContent = `${Math.round(data._elapsed)} ms`;
+    }
+  } catch (e) {
+    const tbody = $('#collTableBody');
+    if (tbody) tbody.innerHTML = `<tr><td colspan="99" style="color:#e88;padding:20px;text-align:center;">Error: ${escapeHtml(e.message)}</td></tr>`;
+  } finally {
+    if (overlay) overlay.style.display = 'none';
+  }
+}
+
+const MAX_TABLE_META_COLS = 5;
+
+function _pickVisibleMetaCols(allKeys, docs) {
+  if (allKeys.length <= MAX_TABLE_META_COLS) return [...allKeys];
+  const scores = {};
+  for (const k of allKeys) {
+    let nonNull = 0;
+    let avgLen = 0;
+    for (const d of docs) {
+      const v = d.metadata?.[k];
+      if (v != null) { nonNull++; avgLen += String(v).length; }
+    }
+    avgLen = nonNull > 0 ? avgLen / nonNull : 9999;
+    const fillRate = docs.length > 0 ? nonNull / docs.length : 0;
+    scores[k] = avgLen - fillRate * 200;
+  }
+  return [...allKeys].sort((a, b) => scores[a] - scores[b]).slice(0, MAX_TABLE_META_COLS);
+}
+
+function renderCollTableHeaders() {
+  const thead = $('#collTableHead');
+  if (!thead) return;
+  thead.innerHTML = '';
+
+  const allMetaKeys = collState.metadataKeys || [];
+  const visibleMeta = _pickVisibleMetaCols(allMetaKeys, collState.documents || []);
+  collState._visibleMeta = visibleMeta;
+  const hiddenCount = allMetaKeys.length - visibleMeta.length;
+
+  const headerRow = document.createElement('tr');
+
+  const rowNumTh = document.createElement('th');
+  rowNumTh.className = 'row-num';
+  rowNumTh.textContent = '#';
+  headerRow.appendChild(rowNumTh);
+
+  const tableCols = [
+    { name: 'document', type: 'TEXT', cls: 'col-doc' },
+    ...visibleMeta.map(k => ({ name: k, type: 'ANY', cls: '' })),
+  ];
+
+  if (hiddenCount > 0) {
+    tableCols.push({ name: `+${hiddenCount} more`, type: '', cls: '', isMore: true });
+  }
+
+  tableCols.forEach(col => {
+    const th = document.createElement('th');
+    if (col.cls) th.className = col.cls;
+    if (col.isMore) {
+      th.style.cssText = 'color:#888;font-size:11px;font-weight:400;font-style:italic;';
+      th.textContent = col.name;
+      th.title = 'Click any row to see all fields';
+    } else {
+      const typeClass = getTypeClass(col.type);
+      const typeLabel = (col.type || 'ANY').substring(0, 4).toUpperCase();
+      th.innerHTML = `
+        <div class="col-header">
+          <span class="col-type-icon ${typeClass}" title="${col.type}">${typeLabel.charAt(0)}</span>
+          <span class="col-name" title="${escapeHtml(col.name)}">${escapeHtml(col.name)}</span>
+        </div>
+        <div class="col-resizer"></div>
+      `;
+    }
+    headerRow.appendChild(th);
+  });
+
+  thead.appendChild(headerRow);
+  setupColumnResize();
+}
+
+function renderCollTableBody() {
+  const tbody = $('#collTableBody');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+
+  const docs = collState.documents || [];
+  const visibleMeta = collState._visibleMeta || [];
+  const allMetaKeys = collState.metadataKeys || [];
+  const hiddenCount = allMetaKeys.length - visibleMeta.length;
+  const totalCols = 1 + 1 + visibleMeta.length + (hiddenCount > 0 ? 1 : 0);
+
+  if (!docs.length) {
+    const tr = document.createElement('tr');
+    const td = document.createElement('td');
+    td.colSpan = totalCols;
+    td.style.cssText = 'text-align:center;padding:24px;color:#888;';
+    td.textContent = 'No documents found';
+    tr.appendChild(td);
+    tbody.appendChild(tr);
+    return;
+  }
+
+  const startNum = (collState.page - 1) * collState.pageSize + 1;
+  const fragment = document.createDocumentFragment();
+
+  docs.forEach((doc, idx) => {
+    const tr = document.createElement('tr');
+    tr.dataset.collIdx = idx;
+
+    const numTd = document.createElement('td');
+    numTd.className = 'row-num';
+    numTd.textContent = startNum + idx;
+    tr.appendChild(numTd);
+
+    const docTd = document.createElement('td');
+    docTd.className = 'col-doc';
+    const docText = doc.document || '';
+    if (!docText) {
+      docTd.innerHTML = '<span class="null-value">NULL</span>';
+    } else {
+      const preview = docText.substring(0, 300).replace(/\n/g, ' ');
+      docTd.innerHTML = `<span class="str-value">${escapeHtml(preview)}${docText.length > 300 ? '\u2026' : ''}</span>`;
+    }
+    tr.appendChild(docTd);
+
+    visibleMeta.forEach(key => {
+      const td = document.createElement('td');
+      const val = doc.metadata?.[key];
+      if (val === null || val === undefined) {
+        td.innerHTML = '<span class="null-value">NULL</span>';
+      } else if (typeof val === 'number') {
+        td.innerHTML = `<span class="num-value">${val}</span>`;
+      } else if (typeof val === 'boolean') {
+        td.innerHTML = `<span class="num-value">${val}</span>`;
+      } else {
+        const sv = String(val);
+        const display = sv.length > 80 ? sv.substring(0, 80) + '\u2026' : sv;
+        td.innerHTML = `<span class="str-value">${escapeHtml(display)}</span>`;
+      }
+      tr.appendChild(td);
+    });
+
+    if (hiddenCount > 0) {
+      const moreTd = document.createElement('td');
+      const hiddenKeys = allMetaKeys.filter(k => !visibleMeta.includes(k));
+      const nonNullCount = hiddenKeys.filter(k => doc.metadata?.[k] != null).length;
+      moreTd.style.cssText = 'color:#888;font-size:11px;font-style:italic;text-align:center;';
+      moreTd.textContent = nonNullCount > 0 ? `${nonNullCount} fields` : '\u2014';
+      tr.appendChild(moreTd);
+    }
+
+    fragment.appendChild(tr);
+  });
+
+  tbody.appendChild(fragment);
+
+  tbody.addEventListener('click', (e) => {
+    const tr = e.target.closest('tr');
+    if (!tr) return;
+    const idx = parseInt(tr.dataset.collIdx);
+    if (isNaN(idx)) return;
+    openRowDetail(idx);
+  });
+}
+
+// ----------------------------- Row Detail Panel ----------------------
+function openRowDetail(idx) {
+  const doc = collState.documents?.[idx];
+  if (!doc) return;
+  const rowNum = (collState.page - 1) * collState.pageSize + idx + 1;
+
+  $('#rowDetailTitle').textContent = `Row ${rowNum}  \u2014  ${collState.currentCollName || 'Collection'}`;
+
+  const fields = [
+    { key: 'embedding_id', val: doc.embedding_id },
+    { key: 'document', val: doc.document },
+  ];
+  const metaKeys = collState.metadataKeys || [];
+  metaKeys.forEach(k => {
+    fields.push({ key: k, val: doc.metadata?.[k] });
+  });
+
+  const body = $('#rowDetailBody');
+  let html = '<table>';
+  fields.forEach(f => {
+    let valHtml;
+    if (f.val === null || f.val === undefined) {
+      valHtml = '<span class="null-value">NULL</span>';
+    } else if (typeof f.val === 'number') {
+      valHtml = `<span class="num-value">${f.val}</span>`;
+    } else if (typeof f.val === 'boolean') {
+      valHtml = `<span class="num-value">${f.val}</span>`;
+    } else {
+      valHtml = `<span class="str-value">${escapeHtml(String(f.val))}</span>`;
+    }
+    html += `<tr><td class="rd-key">${escapeHtml(f.key)}</td><td class="rd-val">${valHtml}</td></tr>`;
+  });
+  html += '</table>';
+  body.innerHTML = html;
+
+  $('#rowDetailOverlay').style.display = 'block';
+  $('#rowDetailPanel').classList.add('open');
+
+  _rowDetailData = { embedding_id: doc.embedding_id, document: doc.document, ...doc.metadata };
+}
+let _rowDetailData = null;
+
+function closeRowDetail() {
+  $('#rowDetailOverlay').style.display = 'none';
+  $('#rowDetailPanel').classList.remove('open');
+  _rowDetailData = null;
+}
+
+$('#rowDetailCloseBtn').addEventListener('click', closeRowDetail);
+$('#rowDetailOverlay').addEventListener('click', closeRowDetail);
+$('#rowDetailCopyBtn').addEventListener('click', () => {
+  if (_rowDetailData) {
+    navigator.clipboard.writeText(JSON.stringify(_rowDetailData, null, 2));
+    const btn = $('#rowDetailCopyBtn');
+    btn.textContent = 'Copied!';
+    setTimeout(() => btn.textContent = 'Copy JSON', 1200);
+  }
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && $('#rowDetailPanel').classList.contains('open')) {
+    closeRowDetail();
+  }
+});
+
+function renderCollPagination() {
+  const inp = $('#collPagInput');
+  const tot = $('#collPagTotal');
+  const info = $('#collPagInfo');
+  if (!inp) return;
+
+  inp.value = collState.page;
+  tot.textContent = collState.totalPages;
+
+  $('#collPagFirst').disabled = collState.page <= 1;
+  $('#collPagPrev').disabled = collState.page <= 1;
+  $('#collPagNext').disabled = collState.page >= collState.totalPages;
+  $('#collPagLast').disabled = collState.page >= collState.totalPages;
+
+  const start = (collState.page - 1) * collState.pageSize + 1;
+  const end = Math.min(collState.page * collState.pageSize, collState.total);
+  info.textContent = collState.total > 0
+    ? `Showing ${start.toLocaleString()} \u2013 ${end.toLocaleString()} of ${collState.total.toLocaleString()} documents`
+    : 'No documents';
+}
+
+function collGoToPage(p) {
+  const page = Math.max(1, Math.min(p, collState.totalPages));
+  if (page !== collState.page) {
+    collState.page = page;
+    loadCollectionDocs();
+  }
+}
+
+// ---- Collection sidebar toggle & filter ----
+(function setupCollections() {
+  $('#collToggle').addEventListener('click', () => {
+    const sec = $('#collectionsSection');
+    sec.classList.toggle('collapsed');
+    const arrow = $('#collToggleArrow');
+    arrow.classList.toggle('collapsed', sec.classList.contains('collapsed'));
+  });
+
+  $('#tablesToggle').addEventListener('click', () => {
+    const filterWrap = $('#tablesFilterWrap');
+    const list = $('#tableList');
+    const arrow = $('#tablesToggleArrow');
+    const isHidden = list.style.display === 'none';
+    filterWrap.style.display = isHidden ? '' : 'none';
+    list.style.display = isHidden ? '' : 'none';
+    arrow.classList.toggle('collapsed', !isHidden);
+  });
+
+  $('#collFilter').addEventListener('input', (e) => {
+    renderCollectionList(e.target.value);
+  });
+})();
+</script>
+</body>
+</html>
